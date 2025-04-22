@@ -35,12 +35,40 @@ export default class TodoHighlightPlugin extends Plugin {
     this.registerMarkdownPostProcessor((el) => {
       const todoRx = /\bTODO\b/g;
       el.querySelectorAll('p, li').forEach((node: HTMLElement) => {
-        node.innerHTML = node.innerHTML.replace(
-          todoRx,
-          `<span class="cm-todo">$&</span>`
-        );
+        const textContent = node.textContent || ''; // Get the text content
+        let match;
+        let lastIndex = 0;
+        const fragments: (string | HTMLElement)[] = [];
+    
+        // Find all matches of the regex
+        while ((match = todoRx.exec(textContent)) !== null) {
+          // Push the text before the match
+          if (match.index > lastIndex) {
+            fragments.push(textContent.slice(lastIndex, match.index));
+          }
+          // Create a span element for the match and push it
+          const span = node.createEl('span', { cls: 'cm-todo', text: match[0] });
+          fragments.push(span);
+          lastIndex = match.index + match[0].length;
+        }
+    
+        // Push the remaining text after the last match
+        if (lastIndex < textContent.length) {
+          fragments.push(textContent.slice(lastIndex));
+        }
+    
+        // Clear the node's content and append the fragments
+        node.empty();
+        fragments.forEach(fragment => {
+          if (typeof fragment === 'string') {
+            node.createEl('span', { text: fragment });
+          } else {
+            node.appendChild(fragment);
+          }
+        });
       });
     });
+    
 
     // Highlight in edit mode 
     const todoEditorDecorator = ViewPlugin.fromClass(
