@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, ColorComponent } from 'obsidian';
 // CodeMirror 6 view API:
 import {
   EditorView,
@@ -142,6 +142,7 @@ export default class TodoHighlightPlugin extends Plugin {
 // Settings tab to pick a colour
 class TodoHighlightSettingTab extends PluginSettingTab {
   plugin: TodoHighlightPlugin;
+
   constructor(app: App, plugin: TodoHighlightPlugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -150,18 +151,30 @@ class TodoHighlightSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'TODO Highlighter Settings' });
+
+    let picker: ColorComponent | undefined;
 
     new Setting(containerEl)
-      .setName('TODO color')
+      .setName('TODO colour')
       .setDesc('Choose the highlight colour for your TODOs.')
-      .addColorPicker(colorPicker =>
-        colorPicker
-          .setValue(this.plugin.settings.todoColor)
-          .onChange(async (value) => {
-            this.plugin.settings.todoColor = value;
+      .addExtraButton(btn =>
+        btn
+          .setIcon('rotate-ccw')                 
+          .setTooltip('Reset to default colour')
+          .onClick(async () => {
+            const defaultColour = DEFAULT_SETTINGS.todoColor;
+            this.plugin.settings.todoColor = defaultColour;
+            picker?.setValue(defaultColour);
             await this.plugin.saveSettings();
           })
-      );
+      )
+      .addColorPicker(cp => {
+        picker = cp;
+        cp.setValue(this.plugin.settings.todoColor)
+          .onChange(async value => {
+            this.plugin.settings.todoColor = value;
+            await this.plugin.saveSettings();
+          });
+      })
   }
 }
